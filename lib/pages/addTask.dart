@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class AddTaskPage extends StatefulWidget {
   @override
@@ -11,6 +13,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
   final TextEditingController _taskTitleController = TextEditingController();
   final TextEditingController _taskDetailsController = TextEditingController();
   DateTime? _selectedDate;
+  bool _isLoading = false;
 
   Future<void> _pickDateTime() async {
     final DateTime? pickedDate = await showDatePicker(
@@ -38,13 +41,37 @@ class _AddTaskPageState extends State<AddTaskPage> {
     }
   }
 
-// fitri, u can use this function
-  void _saveTask() {
-    if (_formKey.currentState!.validate()) {
+  Future<void> _saveTask() async {
+    if (_formKey.currentState!.validate() && _selectedDate != null) {
+      try {
+        setState(() => _isLoading = true);
+
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null) throw Exception('User not authenticated');
+
+        await FirebaseFirestore.instance.collection('tasks').add({
+          'userId': user.uid,
+          'title': _taskTitleController.text,
+          'details': _taskDetailsController.text,
+          'dateTime': Timestamp.fromDate(_selectedDate!),
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Task saved successfully!')),
+        );
+        Navigator.pop(context);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving task: $e')),
+        );
+      } finally {
+        setState(() => _isLoading = false);
+      }
+    } else if (_selectedDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Task saved successfully!')),
+        const SnackBar(content: Text('Please select a date and time')),
       );
-      Navigator.pop(context);
     }
   }
 
@@ -122,11 +149,13 @@ class _AddTaskPageState extends State<AddTaskPage> {
                     ),
                     minimumSize: const Size(double.infinity, 60),
                   ),
-                  onPressed: _saveTask,
-                  child: const Text(
-                    "Save Task",
-                    style: TextStyle(color: Colors.white, fontSize: 18),
-                  ),
+                  onPressed: _isLoading ? null : _saveTask,
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text(
+                          "Save Task",
+                          style: TextStyle(color: Colors.white, fontSize: 18),
+                        ),
                 ),
               ],
             ),
