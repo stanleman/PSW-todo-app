@@ -1,12 +1,16 @@
+import 'package:alarm/alarm.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:todo_app/root.dart';
+import 'package:todo_app/services/notification_utils.dart';
 import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load();
+  await NotificationUtils().configuration();
+  await Alarm.init();
 
   await initializeFirebase();
   runApp(MyApp());

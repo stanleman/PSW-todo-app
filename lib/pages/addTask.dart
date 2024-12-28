@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:todo_app/services/alarm_utils.dart';
+import 'package:todo_app/services/notification_utils.dart';
+import 'dart:math';
 
 class AddTaskPage extends StatefulWidget {
   @override
@@ -9,6 +12,7 @@ class AddTaskPage extends StatefulWidget {
 }
 
 class _AddTaskPageState extends State<AddTaskPage> {
+  NotificationUtils notificationUtils = NotificationUtils();
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _taskTitleController = TextEditingController();
   final TextEditingController _taskDetailsController = TextEditingController();
@@ -49,14 +53,23 @@ class _AddTaskPageState extends State<AddTaskPage> {
         final user = FirebaseAuth.instance.currentUser;
         if (user == null) throw Exception('User not authenticated');
 
+        Random random = Random();
+        int newId = random.nextInt(1000000000) + 1;
+
         await FirebaseFirestore.instance.collection('tasks').add({
           'userId': user.uid,
           'title': _taskTitleController.text,
           'details': _taskDetailsController.text,
           'dateTime': Timestamp.fromDate(_selectedDate!),
           'createdAt': FieldValue.serverTimestamp(),
+          'notificationId': newId,
         });
 
+        await notificationUtils.createScheduleNotification(
+            _selectedDate!, _taskTitleController.text, newId);
+
+        await AlarmUtils()
+            .setAlarm(_selectedDate!, _taskTitleController.text, newId);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Task saved successfully!')),
         );
@@ -125,8 +138,8 @@ class _AddTaskPageState extends State<AddTaskPage> {
                   },
                 ),
                 const SizedBox(height: 16.0),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       _selectedDate != null
@@ -136,6 +149,10 @@ class _AddTaskPageState extends State<AddTaskPage> {
                     ),
                     TextButton(
                       onPressed: _pickDateTime,
+                      style: TextButton.styleFrom(
+                        minimumSize: Size.zero, // Set this
+                        padding: EdgeInsets.zero, // and this
+                      ),
                       child: const Text('Pick Date & Time'),
                     ),
                   ],

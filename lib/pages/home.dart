@@ -1,12 +1,25 @@
+import 'dart:math';
+
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import 'package:todo_app/services/alarm_utils.dart';
+import '../services/notification_utils.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
-  Future<void> _deleteTask(BuildContext context, String docId) async {
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  NotificationUtils notificationUtils = NotificationUtils();
+
+  Future<void> _deleteTask(
+      BuildContext context, String docId, int notificationId) async {
     final bool confirm = await showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -31,6 +44,8 @@ class HomePage extends StatelessWidget {
             .collection('tasks')
             .doc(docId)
             .delete();
+        await notificationUtils.cancelScheduleNotification(notificationId);
+        await AlarmUtils().cancelAlarm(notificationId);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Task deleted')),
         );
@@ -56,6 +71,7 @@ class HomePage extends StatelessWidget {
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 TextField(
                   controller: titleController,
@@ -67,14 +83,18 @@ class HomePage extends StatelessWidget {
                   maxLines: 3,
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Due: ${DateFormat.yMd().add_jm().format(selectedDate)}',
                       style: const TextStyle(fontSize: 14),
                     ),
                     TextButton(
+                      style: TextButton.styleFrom(
+                        minimumSize: Size.zero, // Set this
+                        padding: EdgeInsets.zero, // and this
+                      ),
                       onPressed: () async {
                         final DateTime? pickedDate = await showDatePicker(
                           context: context,
@@ -115,6 +135,8 @@ class HomePage extends StatelessWidget {
             TextButton(
               onPressed: () async {
                 try {
+                  Random random = Random();
+                  int newId = random.nextInt(1000000000) + 1;
                   await FirebaseFirestore.instance
                       .collection('tasks')
                       .doc(docId)
@@ -122,7 +144,13 @@ class HomePage extends StatelessWidget {
                     'title': titleController.text,
                     'details': detailsController.text,
                     'dateTime': Timestamp.fromDate(selectedDate),
+                    'notificationId': newId,
                   });
+                  await notificationUtils
+                      .cancelScheduleNotification(data['notificationId']);
+                  await notificationUtils.createScheduleNotification(selectedDate, titleController.text, newId);
+                  await AlarmUtils().cancelAlarm(data['notificationId']);
+                  await AlarmUtils().setAlarm(selectedDate, titleController.text, newId);
                   Navigator.pop(context);
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -136,6 +164,12 @@ class HomePage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  @override
+  void initState() {
+    notificationUtils.requestNotificationPermission(context);
+    super.initState();
   }
 
   @override
@@ -173,38 +207,69 @@ class HomePage extends StatelessWidget {
               final DateTime dateTime =
                   (data['dateTime'] as Timestamp).toDate();
 
-              return Card(
-                margin: const EdgeInsets.only(bottom: 16),
-                child: ListTile(
-                  title: Text(data['title'] ?? 'No title'),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              return Dismissible(
+                key: Key(doc.id),
+                background: Container(
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text(data['details'] ?? 'No details'),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Due: ${DateFormat.yMd().add_jm().format(dateTime)}',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 12,
+                      Icon(
+                        Icons.delete,
+                        size: 40,
+                        color: Colors.red,
+                      ),
+                      Icon(
+                        Icons.delete,
+                        size: 40,
+                        color: Colors.red,
+                      ),
+                    ],
+                  ),
+                ),
+                confirmDismiss: (direction) async {
+                  // Remove the item from the data source.
+                  // setState(() {
+                  //   items.removeAt(index);
+                  // });
+                  _deleteTask(context, doc.id, data['notificationId']);
+                  return false;
+                },
+                child: Card(
+                  // margin: const EdgeInsets.only(bottom: 16),
+                  child: ListTile(
+                    title: Text(data['title'] ?? 'No title'),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(data['details'] ?? 'No details'),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Due: ${DateFormat.yMd().add_jm().format(dateTime)}',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                            icon: const Icon(Icons.edit),
+                            onPressed: () {
+                              _showEditDialog(context, doc.id, data);
+                            }),
+                        IconButton(
+                          icon: const Icon(Icons.delete),
+                          onPressed: () => _deleteTask(
+                              context, doc.id, data['notificationId']),
+                        ),
+                      ],
+                    ),
+                    isThreeLine: true,
                   ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit),
-                        onPressed: () => _showEditDialog(context, doc.id, data),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete),
-                        onPressed: () => _deleteTask(context, doc.id),
-                      ),
-                    ],
-                  ),
-                  isThreeLine: true,
                 ),
               );
             },
