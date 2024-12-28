@@ -10,9 +10,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load();
   await NotificationUtils().configuration();
-  await Alarm.init();
-
   await initializeFirebase();
+  await Alarm.init();
   runApp(MyApp());
 }
 

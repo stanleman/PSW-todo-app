@@ -70,12 +70,12 @@ class NotificationUtils {
           month: datetime.month,
           year: datetime.year,
           hour: datetime.hour,
-          minute: datetime.minute - 30,
+          minute: datetime.minute,
         ),
         content: NotificationContent(
           id: id,
           channelKey: 'basic_channel',
-          title: '$name is due in 30 minutes!',
+          title: '$name is due in less than 30 minutes!',
           body: 'This is a reminder to finish your task before it dues.',
         ),
       );

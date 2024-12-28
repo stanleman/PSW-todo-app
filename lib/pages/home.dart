@@ -201,12 +201,12 @@ class _HomePageState extends State<HomePage> {
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: snapshot.data!.docs.length,
-            itemBuilder: (context, index) {
+            itemBuilder: (builderContext, index) {
               final doc = snapshot.data!.docs[index];
               final data = doc.data() as Map<String, dynamic>;
               final DateTime dateTime =
                   (data['dateTime'] as Timestamp).toDate();
-
+              
               return Dismissible(
                 key: Key(doc.id),
                 background: Container(
@@ -228,10 +228,6 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 confirmDismiss: (direction) async {
-                  // Remove the item from the data source.
-                  // setState(() {
-                  //   items.removeAt(index);
-                  // });
                   _deleteTask(context, doc.id, data['notificationId']);
                   return false;
                 },

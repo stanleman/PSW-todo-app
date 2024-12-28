@@ -20,7 +20,7 @@ class AlarmUtils {
           fadeDuration: 3.0,
           androidFullScreenIntent: true,
           notificationSettings: NotificationSettings(
-            title: '$name is due in 10 minutes!',
+            title: '$name is due in less than 10 minutes!',
             body: 'This is a reminder to finish your task before it dues soon.',
             stopButton: 'Stop the alarm',
             icon: 'notification_icon',

@@ -8,7 +8,6 @@ class ProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-
     return Scaffold(
       body: Center(
         child: Padding(
@@ -25,16 +24,18 @@ class ProfilePage extends StatelessWidget {
                 radius: 50,
                 backgroundColor: Colors.blue[100],
                 child: Text(
-                  user?.displayName?.substring(0, 1).toUpperCase() ?? 'U',
+                  user?.email?.substring(0, 1).toUpperCase() ?? 'U',
                   style: const TextStyle(
                       fontSize: 32, fontWeight: FontWeight.bold),
                 ),
               ),
               const SizedBox(height: 20),
-              Text(
-                user?.displayName ?? 'User',
-                style:
-                    const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+              const Text(
+                "User",
+                style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black),
               ),
               const SizedBox(height: 8),
               Text(
