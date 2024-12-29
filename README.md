@@ -1,16 +1,27 @@
-# todo_app
+Run ```pub get``` to get necessary dependencies.
 
-A new Flutter project.
+Create a .env file to get Firebase working.
+```
+# Universal
+STORAGE_BUCKET=***
+PROJECT_ID=***
+MESSENGER_ID=***
 
-## Getting Started
+# Web / Windows
+WEB_WIN_API_KEY=***
+WEB_APP_ID=***
+AUTH_DOMAIN=***
 
-This project is a starting point for a Flutter application.
+# Android
+ANDROID_API_KEY=***
+ANDROID_APP_ID=***
 
-A few resources to get you started if this is your first Flutter project:
+# iOS / macOS
+IOS_MAC_API_KEY=***
+IOS_MAC_APP_ID=***
+IOS_MAC_BUNDLE_ID=***
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+```
+Replace *** with your Firebase information.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Run main.dart to start the app.
